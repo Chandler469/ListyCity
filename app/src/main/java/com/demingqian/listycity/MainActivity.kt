@@ -5,23 +5,39 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.lazy.items
 import com.demingqian.listycity.ui.theme.ListyCityTheme
 import androidx.compose.runtime.mutableStateListOf
-import kotlin.coroutines.EmptyCoroutineContext.get
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Text
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 
 class CityRepository {
     private val _cities = mutableStateListOf(
-        "Edmonton", "Vancouver", "Moscow", "Sydney", "Ber;in", "Vienna", "Tokyo", "Beijing", "Osaka", "New Delhi"
+        "Edmonton", "Vancouver", "Moscow", "Sydney", "Berlin", "Vienna", "Tokyo", "Beijing", "Osaka", "New Delhi"
     )
 
-    fun cities(): List<String> {
+    val cities: List<String>
         get() = _cities
+
+    fun addCity(city: String) {
+        _cities.add(city)
     }
 }
 
@@ -29,11 +45,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val cityRepo = CityRepository()
         setContent {
             ListyCityTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                    CityListScreen(
+                        cities = cityRepo.cities,
+                        onAddCity = { cityRepo.addCity(it) },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -43,17 +61,59 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
+fun CityListScreen(
+    modifier: Modifier = Modifier,
+    cities: List<String>,
+    onAddCity: (String) -> Unit
+) {
+    var newCityName by rememberSaveable { mutableStateOf("") }
+
+    Column(
         modifier = modifier
-    )
+            .fillMaxSize()
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            OutlinedTextField(
+                value = newCityName,
+                onValueChange = { newCityName = it },
+                label = { Text(text = "City Name:") },
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(
+            onClick = {
+                if (newCityName.isNotBlank()) {
+                    onAddCity(newCityName)
+                    newCityName = ""
+                }
+            }
+        ) {
+            Text(
+                text = "Add City"
+            )
+        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            items(cities) { city ->
+                CityRow(city = city)
+            }
+        }
+    }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    ListyCityTheme {
-        Greeting("Android")
-    }
+fun CityRow(city: String) {
+    Text(
+        text = city,
+        fontSize = 28.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 14.dp)
+    )
 }
