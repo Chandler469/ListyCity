@@ -27,6 +27,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.graphics.Color
 
 class CityRepository {
     private val _cities = mutableStateListOf(
@@ -39,6 +42,22 @@ class CityRepository {
     fun addCity(city: String) {
         _cities.add(city)
     }
+
+    fun deleteCity(city: String) {
+        _cities.remove(city)
+    }
+}
+
+class CardUiState {
+    var selectedCity by mutableStateOf("")
+
+    fun updateSelection(city: String) {
+        if (city == selectedCity) {
+            selectedCity = ""
+        } else {
+            selectedCity = city
+        }
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -46,12 +65,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val cityRepo = CityRepository()
+        val cardUiState = CardUiState()
         setContent {
             ListyCityTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     CityListScreen(
                         cities = cityRepo.cities,
                         onAddCity = { cityRepo.addCity(it) },
+                        onDeleteCity = { cityRepo.deleteCity(it) },
+                        cardUiState = cardUiState,
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -64,7 +86,9 @@ class MainActivity : ComponentActivity() {
 fun CityListScreen(
     modifier: Modifier = Modifier,
     cities: List<String>,
-    onAddCity: (String) -> Unit
+    cardUiState: CardUiState,
+    onAddCity: (String) -> Unit,
+    onDeleteCity: (String) -> Unit
 ) {
     var newCityName by rememberSaveable { mutableStateOf("") }
 
@@ -72,48 +96,79 @@ fun CityListScreen(
         modifier = modifier
             .fillMaxSize()
     ) {
+        OutlinedTextField(
+            value = newCityName,
+            onValueChange = { newCityName = it },
+            label = { Text(text = "City Name:") },
+            modifier = Modifier.fillMaxWidth()
+        )
         Row(
             modifier = Modifier
                 .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = newCityName,
-                onValueChange = { newCityName = it },
-                label = { Text(text = "City Name:") },
-                modifier = Modifier.weight(1f)
-            )
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Button(
-            onClick = {
-                if (newCityName.isNotBlank()) {
-                    onAddCity(newCityName)
-                    newCityName = ""
+            Button(
+                onClick = {
+                    if (newCityName.isNotBlank()) {
+                        onAddCity(newCityName)
+                        newCityName = ""
+                    }
                 }
+            ) {
+                Text(
+                    text = "Add City"
+                )
             }
-        ) {
-            Text(
-                text = "Add City"
-            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    if (cardUiState.selectedCity.isNotBlank()) {
+                        onDeleteCity(cardUiState.selectedCity)
+                        cardUiState.selectedCity = ""
+                    }
+                }
+            ) {
+                Text(
+                    text = "Delete City"
+                )
+            }
         }
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
         ) {
             items(cities) { city ->
-                CityRow(city = city)
+                CityRow(
+                    city = city,
+                    cardUiState = cardUiState
+                )
             }
         }
     }
 }
 
 @Composable
-fun CityRow(city: String) {
-    Text(
-        text = city,
-        fontSize = 28.sp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 14.dp)
-    )
+fun CityRow(
+    city: String,
+    cardUiState: CardUiState
+) {
+    Card(
+        onClick = {
+            cardUiState.updateSelection(city = city)
+        },
+        colors = CardDefaults.cardColors(
+            containerColor = if (city == cardUiState.selectedCity) {
+                Color(0xFF9E9E9E)
+            } else {
+                Color(0xFFFFFFFF)
+            }
+        )
+    ) {
+        Text(
+            text = city,
+            fontSize = 28.sp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 14.dp)
+        )
+    }
 }
